@@ -1,0 +1,62 @@
+version: "3.9"
+
+x-siyuan-config:
+  # Define a reusable configuration for the Siyuan workspace path
+  # The name of this directory will be shown on the login screen
+  # and in the top left corner of the Siyuan window.
+  # you can define it here as /path/to/workspacename 
+  # or, if you want it gitignored, define it in a file named .env 
+  # in the same directory as this file as SIYUAN_WORKSPACE_NAME=workspacename
+  # Unfortunately this .env file cannot go in ./secrets bacause 
+  # It is needed by dockeer compose before the container starts.
+  # Yes, I spent a stupid amont of time trying to figure this out.
+  workspace1_path: &workspace1Path /siyuan/${SIYUAN1_WORKSPACE_NAME}
+  # Define the volume name once here to avoid repetition
+  # and to make it easier to change in the future.
+  volume1_name: &workspace1Volume siyuan-workspace1
+
+
+services:
+  siyuan1:
+    image: b3log/siyuan
+    container_name: siyuan1
+    hostname: ${SIYUAN1_HOSTNAME}
+    ports:
+      - "6806"
+    volumes:
+      # I had to use the full YAML path here in order for the 
+      # YAML aliases to work correctly.
+      - type: volume
+        source: *workspace1Volume 
+        target: *workspace1Path
+    restart: unless-stopped
+    environment:
+      # A list of time zone identifiers can be found at https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+      TZ: America/Detroit
+      PUID: 1000  # Customize user ID
+      PGID: 1000  # Customize group ID
+      SIYUAN_WORKSPACE_PATH: *workspace1Path
+    env_file:
+      - secrets/siyuan.env
+    networks:
+      default:
+      inverseproxy_shared:
+
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.siyuan1-secure.rule: Host(`${SIYUAN1_HOSTNAME}`)
+      traefik.http.routers.siyuan1-secure.entrypoints: web-main
+      traefik.http.routers.siyuan1-secure.tls: "true"
+      traefik.http.routers.siyuan1-secure.tls.certResolver: letsencrypt
+      traefik.http.routers.siyuan1-secure.service: siyuan1-svc
+      traefik.http.services.siyuan1-svc.loadbalancer.server.port: 6806
+volumes:
+  *workspace1Volume :
+
+networks:
+  default:
+    driver_opts:
+      encrypted: 1
+  inverseproxy_shared:
+    external: true
+
