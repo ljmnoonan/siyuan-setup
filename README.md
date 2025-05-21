@@ -29,4 +29,4 @@ docker compose -f siyuan.yaml up -d
 
 ## Credits
 
-Many thanks to [Tecnativa](https://github.com/Tecnativa) for the whole inverse proxy setup and.
+Many thanks to [Tecnativa](https://github.com/Tecnativa) for the whole inverse proxy setup.
